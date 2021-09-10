@@ -126,6 +126,14 @@ struct States {
     }
 
     Transition GetTransition() override {
+      if (IsInInnerState<Moving_To_WaitingForCode>()) {
+        return SiblingTransition<WaitingForCode>();
+      }
+
+      if (IsInInnerState<Moving_To_Idling>()) {
+        return SiblingTransition<Idling>();
+      }
+
       switch (Owner().lastTrigger) {
         case OpenRoof:
           Owner().lastTrigger = None;
@@ -139,38 +147,29 @@ struct States {
         default:
           break;
       }
-  
-      // This should be done in OpeningRoof, but that somehow skips Moving.OnExit and Idling.OnExit
-      // See https://github.com/amaiorano/hsm/issues/14
-      if (Owner().hasError(MaxLimit) && Owner().stateMachine.IsInState<OpeningRoof>()) {
-        return SiblingTransition<WaitingForCode>();
-      }
-
-      // This should be done in ClosingRoof, but that somehow skips Moving.OnExit and Idling.OnExit
-      if (Owner().hasError(MinLimit) && Owner().stateMachine.IsInState<ClosingRoof>()) {
-        return SiblingTransition<WaitingForCode>();
-      }
-
-      if (timeout) {
-        if ((millis() - startTime > timeout)) {
-          timeout = 0;
-          return SiblingTransition<Idling>();
-        }
-      }
 
       return NoTransition();
     };
+  };
 
-    unsigned long timeout   = 0;
-    unsigned long startTime = 0;
+  // Intermediate state to transition from Opening or Closing to WaitingForCode
+  // Moving state immediately transitions to WaitingForCode when this state is active
+  // This construction is needed to execute onExit of Moving state
+  struct Moving_To_WaitingForCode : BaseState {
+    DEFINE_HSM_STATE(Moving_To_WaitingForCode)
+  };
+
+  // Intermediate state to transition from Opening or Closing to Idling
+  struct Moving_To_Idling : BaseState {
+    DEFINE_HSM_STATE(Moving_To_Idling)
   };
 
   struct OpeningRoof : BaseState {
     DEFINE_HSM_STATE(OpeningRoof)
 
     void OnEnter(const uint32_t timeoutMs = 0) {
-      GetOuterState<Moving>()->timeout   = timeoutMs;
-      GetOuterState<Moving>()->startTime = millis();
+      timeout   = timeoutMs;
+      startTime = millis();
       Owner().setMotorState(RunningUp);
     }
     void OnExit() override {
@@ -178,11 +177,23 @@ struct States {
     }
 
     Transition GetTransition() override {
-      // if (Owner().hasError(MaxLimit)) {
-      //   return SiblingTransition<WaitingForCode>();
-      // }
+      if (Owner().hasError(MaxLimit)) {
+        return SiblingTransition<Moving_To_WaitingForCode>();
+      }
+
+      if (timeout) {
+        if ((millis() - startTime > timeout)) {
+          timeout = 0;
+          return SiblingTransition<Moving_To_Idling>();
+        }
+      }
+
       return NoTransition();
     };
+
+  private:
+    unsigned long timeout   = 0;
+    unsigned long startTime = 0;
   };
 
   struct ClosingRoof : BaseState {
@@ -197,7 +208,7 @@ struct States {
 
     Transition GetTransition() override {
       if (Owner().hasError(MinLimit)) {
-        return SiblingTransition<Idling>();
+        return SiblingTransition<Moving_To_WaitingForCode>();
       }
       if (Owner().hasError(BeltTension)) {
         return SiblingTransition<OpeningRoof>(2000);

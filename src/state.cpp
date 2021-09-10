@@ -15,7 +15,7 @@ StateController::StateController() : stateMachineTask({runStateMachine, "stateCo
 
 void StateController::initialize() {
   stateMachine.Initialize<States::WaitingForCode>(this);
-  stateMachine.SetDebugInfo("StateController", TraceLevel::Diagnostic);
+  stateMachine.SetDebugInfo("StateController", TraceLevel::Basic);
   stateMachineTask.resumeTask();
 }
 
