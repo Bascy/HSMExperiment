@@ -18,7 +18,8 @@ enum Error {
   MaxLimit,
   MinLimit,
   VehicleRunnning,
-  BeltTension
+  BeltTension,
+  SafetyTaskNotRunning
 };
 
 enum MotorState {
@@ -88,7 +89,7 @@ struct States {
     }
 
     Transition GetTransition() override {
-      if (Owner().hasError(VehicleRunnning)) {
+      if (Owner().hasError(SafetyTaskNotRunning)) {
         return SiblingTransition<WaitingForCode>();
       }
 
@@ -131,6 +132,10 @@ struct States {
       }
 
       if (IsInInnerState<Moving_To_Idling>()) {
+        return SiblingTransition<Idling>();
+      }
+
+      if (Owner().hasError(VehicleRunnning)) {
         return SiblingTransition<Idling>();
       }
 
