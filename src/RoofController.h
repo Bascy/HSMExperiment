@@ -47,7 +47,7 @@ public:
   uint32_t getUpdatePeriod() { return updatePeriod; };
 
 private:
-  friend struct States;
+  friend struct RoofStates;
 
   hsm::StateMachine stateMachine;
   Sense::Task stateMachineTask;
@@ -58,7 +58,7 @@ private:
   uint32_t updatePeriod = 1000;
 };
 
-struct States {
+struct RoofStates {
 
   struct BaseState : StateWithOwner<RoofController> {
   };

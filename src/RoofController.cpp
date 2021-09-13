@@ -9,7 +9,7 @@ void runStateMachine(void* pvParameters) {
 RoofController::RoofController() : stateMachineTask({runStateMachine, "RoofController", 2048, this, 5, 1, true, false, true, true}){};
 
 void RoofController::initialize() {
-  stateMachine.Initialize<States::WaitingForCode>(this);
+  stateMachine.Initialize<RoofStates::WaitingForCode>(this);
   stateMachine.SetDebugInfo("StateController", TraceLevel::Basic);
   stateMachineTask.resumeTask();
 }
