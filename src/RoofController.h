@@ -28,9 +28,10 @@ enum MotorState {
   RunningDown,
 };
 
-class StateController {
+class RoofController {
 public:
-  StateController();
+  RoofController();
+  virtual ~RoofController(){};
 
   void initialize();
   void updateStateMachine();
@@ -42,24 +43,24 @@ public:
   bool hasError(Error);
   void setMotorState(MotorState);
 
-  void setUpdatePeriod(uint32_t);
-  uint32_t getUpdatePeriod();
+  void setUpdatePeriod(uint32_t period) { updatePeriod = period; };
+  uint32_t getUpdatePeriod() { return updatePeriod; };
 
 private:
   friend struct States;
+
   hsm::StateMachine stateMachine;
+  Sense::Task stateMachineTask;
 
   bool codeReceived   = false;
   Trigger lastTrigger = None;
   std::bitset<sizeof(Error)> errors;
-  MotorState motorState = Stopped;
-  Sense::Task stateMachineTask;
   uint32_t updatePeriod = 1000;
 };
 
 struct States {
 
-  struct BaseState : StateWithOwner<StateController> {
+  struct BaseState : StateWithOwner<RoofController> {
   };
 
   struct WaitingForCode : BaseState {

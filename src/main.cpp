@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-#include "state.h"
+#include "RoofController.h"
 
-StateController controller;
+RoofController controller{};
 
 void setup() {
   Serial.begin(115200);
